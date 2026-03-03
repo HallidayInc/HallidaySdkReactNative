@@ -81,3 +81,37 @@ web-app/
 src/
   webAppHtml.ts      Auto-generated (npm run build:web)
 ```
+
+## Android Production Build (APK)
+
+Ensure these tools installed and are available in the CLI.
+
+- Android SDK — $ANDROID_HOME set, SDK at ~/Library/Android/sdk
+- Build tools — 35.0.0 and 36.0.0
+- Platforms — android-35 and android-36
+- Java 17 — required by Gradle, installed via Homebrew
+- ADB — available for device/emulator communication
+- Expo CLI — 55.0.8
+- Node.js LTS
+
+Run:
+
+```
+npm install
+npm run install:web
+npm run build:web
+npx expo prebuild --platform android
+cd android && ./gradlew assembleRelease
+```
+
+The APK will be at: `android/app/build/outputs/apk/release/app-release.apk`
+
+## iOS Production Build
+
+Ensure these tools installed and are available in the CLI.
+
+1. Xcode — Mac App Store (includes simulators + build toolchain)
+2. Xcode Command Line Tools — xcode-select --install
+3. CocoaPods — sudo gem install cocoapods or brew install cocoapods
+4. Node.js LTS
+
