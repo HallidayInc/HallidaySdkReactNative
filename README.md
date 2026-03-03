@@ -111,7 +111,14 @@ The APK will be at: `android/app/build/outputs/apk/release/app-release.apk`
 Ensure these tools installed and are available in the CLI.
 
 1. Xcode — Mac App Store (includes simulators + build toolchain)
-2. Xcode Command Line Tools — xcode-select --install
-3. CocoaPods — sudo gem install cocoapods or brew install cocoapods
+2. Apple Developer account and code signing configured in Xcode for production or TestFlight builds
+3. Xcode Command Line Tools — xcode-select --install
 4. Node.js LTS
 
+Run:
+
+```
+npm install
+npx expo prebuild --platform ios
+## Open the xcworkspace in ios/ with Xcode and create a release build
+```
