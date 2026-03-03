@@ -37,7 +37,13 @@ npm run build:web
 
 ## Run
 
-Runs in simulator.
+Runs with Expo Go mobile app. Scan the QR code in the terminal!
+
+```
+npm start
+```
+
+Simulator:
 
 ```
 npx expo run:ios
