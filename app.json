@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "hallidaydemo",
+    "scheme": "hallidaysdkdemo",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.hallidaywidgetdemo",
+      "bundleIdentifier": "com.example.hallidaysdkdemo",
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
           "metamask",
@@ -30,7 +30,7 @@
       }
     },
     "android": {
-      "package": "com.example.hallidaywidgetdemo",
+      "package": "com.example.hallidaysdkdemo",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -42,7 +42,7 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "hallidaydemo"
+              "scheme": "hallidaysdkdemo"
             }
           ],
           "category": [

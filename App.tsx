@@ -17,7 +17,7 @@ const APP_CONFIG = {
     ],
     windowType: 'EMBED',
   },
-  redirectScheme: 'hallidaydemo://',
+  redirectScheme: 'hallidaysdkdemo://',
 };
 
 const CONFIG_INJECTION_SCRIPT = `window.__APP_CONFIG__ = ${JSON.stringify(APP_CONFIG)}; true;`;
