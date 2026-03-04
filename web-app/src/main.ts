@@ -3,7 +3,7 @@ globalThis.Buffer = Buffer;
 
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-import { base } from '@reown/appkit/networks';
+import * as networks from '@reown/appkit/networks';
 import { openHallidayPayments } from '@halliday-sdk/payments';
 import { connectSigner } from '@halliday-sdk/payments/ethers';
 import { BrowserProvider } from 'ethers';
@@ -14,9 +14,13 @@ const REOWN_PROJECT_ID = _cfg.reownProjectId;
 const HALLIDAY_CONFIG = _cfg.hallidayConfig;
 const REDIRECT_SCHEME: string = _cfg.redirectScheme;
 
+const evmChains = Object.values(networks).filter(
+  (n) => typeof n === 'object' && n !== null && 'id' in n && n.chainNamespace !== 'solana'
+);
+
 const appKit = createAppKit({
   adapters: [new EthersAdapter()],
-  networks: [base],
+  networks: evmChains,
   projectId: REOWN_PROJECT_ID,
   metadata: {
     name: 'Halliday SDK React Native Demo',

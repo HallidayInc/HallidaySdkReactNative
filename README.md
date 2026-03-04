@@ -57,6 +57,11 @@ npx expo run:ios --device
 npx expo run:android --device
 ```
 
+Also building for a connected device without a Metro debug server on iOS:
+```
+npx expo run:ios --configuration Release --device --no-bundler
+```
+
 ## Config
 
 All runtime config lives in `APP_CONFIG` in `App.tsx`. Change values there and reload the RN app — no web rebuild needed.
