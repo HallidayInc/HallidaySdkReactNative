@@ -59,13 +59,13 @@ async function launchHalliday(address: string) {
   const provider = await appKit.getUniversalProvider();
   if (!provider) throw new Error('No provider');
 
-  const signer = connectSigner(() => new BrowserProvider(provider as any).getSigner());
+  const connectedSigner = connectSigner(() => new BrowserProvider(provider as any).getSigner());
 
   openHallidayPayments({
     ...HALLIDAY_CONFIG,
     targetElementId: 'halliday',
-    owner: { address: address as `0x${string}` },
-    funder: { address: address as `0x${string}` },
+    owner: { address: address as `0x${string}`, ...connectedSigner },
+    funder: { address: address as `0x${string}`, ...connectedSigner },
   });
 
   statusText.textContent = '';
