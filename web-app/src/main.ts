@@ -67,9 +67,8 @@ async function launchHalliday(address: string) {
 
   openHallidayPayments({
     ...HALLIDAY_CONFIG,
-    targetElementId: 'halliday',
-    owner: { address: address as `0x${string}`, ...connectedSigner },
-    funder: { address: address as `0x${string}`, ...connectedSigner },
+    userWallet: connectedSigner,
+    destinationAddress: address
   });
 
   statusText.textContent = '';
