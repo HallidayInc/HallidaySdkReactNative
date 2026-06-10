@@ -4,7 +4,12 @@ globalThis.Buffer = Buffer;
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 import * as networks from '@reown/appkit/networks';
-import { openHallidayPayments } from '@halliday-sdk/payments';
+import {
+  openHallidayPayments,
+  openWithdraw,
+  openActivity,
+  initializeClient,
+} from '@halliday-sdk/payments';
 import { connectSigner } from '@halliday-sdk/payments/ethers';
 import { BrowserProvider } from 'ethers';
 import './style.css';
@@ -42,47 +47,61 @@ const appKit = createAppKit({
   },
 });
 
-let hallidayOpened = false;
+let initialized = false;
+let address: string | null = null;
+let userWallet: any = null;
 
 const connectSection = document.getElementById('connect-section')!;
 const hallidaySection = document.getElementById('halliday-section')!;
-const hallidayEl = document.getElementById('halliday')!;
 const statusText = document.getElementById('status-text')!;
+const btnDeposit = document.getElementById('btn-deposit') as HTMLButtonElement;
+const btnWithdraw = document.getElementById('btn-withdraw') as HTMLButtonElement;
+const btnActivity = document.getElementById('btn-activity') as HTMLButtonElement;
+
+function setActionsEnabled(enabled: boolean) {
+  btnDeposit.disabled = !enabled;
+  btnWithdraw.disabled = !enabled;
+  btnActivity.disabled = !enabled;
+}
 
 function reset() {
-  hallidayOpened = false;
+  initialized = false;
+  address = null;
   connectSection.classList.remove('hidden');
   hallidaySection.classList.add('hidden');
-  hallidayEl.innerHTML = '';
+  setActionsEnabled(false);
   statusText.textContent = '';
 }
 
-async function launchHalliday(address: string) {
+async function setupHalliday(_address: string) {
   statusText.textContent = 'Loading...';
 
   const provider = await appKit.getUniversalProvider();
   if (!provider) throw new Error('No provider');
 
-  const connectedSigner = connectSigner(() => new BrowserProvider(provider as any).getSigner());
+  userWallet = connectSigner(() => new BrowserProvider(provider as any).getSigner());
 
-  openHallidayPayments({
+  initializeClient({
     ...HALLIDAY_CONFIG,
-    userWallet: connectedSigner,
-    destinationAddress: address
+    userWallet,
+    destinationAddress: _address,
+    outputs: HALLIDAY_CONFIG.outputs,
   });
 
+  initialized = true;
+  setActionsEnabled(true);
   statusText.textContent = '';
 }
 
 appKit.subscribeAccount((state: { address?: string; isConnected?: boolean }) => {
-  if (state.isConnected && state.address && !hallidayOpened) {
-    hallidayOpened = true;
+  if (state.isConnected && state.address && !initialized) {
     connectSection.classList.add('hidden');
     hallidaySection.classList.remove('hidden');
-    launchHalliday(state.address).catch((e) => {
+    address = state.address;
+    setupHalliday(address).catch((e) => {
       statusText.textContent = e instanceof Error ? e.message : 'Failed to load';
     });
-  } else if (!state.isConnected && hallidayOpened) {
+  } else if (!state.isConnected && initialized) {
     reset();
   }
 });
@@ -94,4 +113,24 @@ document.getElementById('btn-connect')!.addEventListener('click', () => {
 document.getElementById('btn-restart')!.addEventListener('click', async () => {
   try { await appKit.disconnect(); } catch {}
   reset();
+});
+
+btnDeposit.addEventListener('click', () => {
+  if (!initialized || !userWallet || !address) return;
+  openHallidayPayments({
+    userWallet,
+  });
+});
+
+btnWithdraw.addEventListener('click', () => {
+  if (!initialized || !userWallet) return;
+  openWithdraw({
+    withdrawInputs: HALLIDAY_CONFIG.outputs,
+    withdrawFunder: userWallet
+  });
+});
+
+btnActivity.addEventListener('click', () => {
+  if (!initialized) return;
+  openActivity();
 });

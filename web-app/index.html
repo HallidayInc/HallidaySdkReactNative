@@ -7,15 +7,17 @@
 </head>
 <body>
   <div id="app">
-    <div id="connect-section">
+    <div id="connect-section" class="halliday-container">
       <h1>Halliday SDK React Native Demo</h1>
-      <button class="connect-button" id="btn-connect">Connect Wallet</button>
+      <button id="btn-connect">Connect Wallet</button>
     </div>
 
-    <div id="halliday-section" class="hidden">
-      <button class="restart-button" id="btn-restart">Disconnect Wallet</button>
+    <div id="halliday-section" class="halliday-container hidden">
+      <button id="btn-restart">Disconnect</button>
+      <button id="btn-deposit" disabled>Deposit with Halliday</button>
+      <button id="btn-withdraw" disabled>Withdraw</button>
+      <button id="btn-activity" disabled>Activity</button>
       <div id="status-text"></div>
-      <div id="halliday"></div>
     </div>
   </div>
 

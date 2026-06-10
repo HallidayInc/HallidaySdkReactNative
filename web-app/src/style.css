@@ -1,67 +1,43 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-html, body {
-  width: 100%; height: 100%;
-  background: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #000;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial;
 }
 
 #app {
-  width: 100%; height: 100%;
+  min-height: 100vh;
   display: flex;
-  flex-direction: column;
-}
-
-#connect-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  gap: 28px;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
-#connect-section h1 { font-size: 22px; font-weight: 700; }
+.halliday-container {
+  text-align: center;
+  max-width: 100%;
+}
 
-.connect-button {
-  padding: 14px 28px;
-  background: #3df57b;
+button {
+  display: block;
+  margin: 16px auto;
+  background-color: #3df57b;
+  color: #1a1a1a;
   border: none;
-  border-radius: 12px;
-  color: #000;
-  font-size: 16px;
-  font-weight: 700;
+  border-radius: 5px;
+  padding: 16px 29px;
   cursor: pointer;
+  font-size: 17px;
+  font-weight: bold;
 }
 
-.connect-button:active { opacity: 0.8; }
-
-
-#halliday-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+button:disabled {
+  background-color: #c5c9c6;
+  color: #8a8a8a;
 }
 
-#status-text { text-align: center; padding: 12px; font-size: 14px; color: #666; }
+#status-text { font-size: 14px; color: #666; }
 #status-text:empty { display: none; }
-
-#halliday { flex: 1; overflow: hidden; }
-#halliday iframe { width: 100% !important; height: 100% !important; border: none !important; }
-
-.restart-button {
-  margin: 12px 24px;
-  padding: 14px;
-  background: transparent;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  color: #666;
-  font-size: 14px;
-}
-
-.restart-button:active { background: #f0f0f0; }
 
 .hidden { display: none !important; }

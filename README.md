@@ -124,6 +124,9 @@ Run:
 
 ```
 npm install
+npm run install:web
+npm run build:web
 npx expo prebuild --platform ios
 ## Open the xcworkspace in ios/ with Xcode and create a release build
+## DO NOT open the xcodeproj file with Xcode
 ```
