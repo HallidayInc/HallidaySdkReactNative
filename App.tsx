@@ -1,4 +1,5 @@
-import { StyleSheet, Linking } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { StyleSheet, Linking, AppState } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
@@ -8,14 +9,25 @@ import { WEB_APP_HTML } from './src/webAppHtml';
 const HALLIDAY_API_KEY = process.env.EXPO_PUBLIC_HALLIDAY_API_KEY!;
 const REOWN_PROJECT_ID = process.env.EXPO_PUBLIC_REOWN_PROJECT_ID!;
 
+const CHAIN_IDS = [
+  8453,  // base
+  1,     // ethereum
+  42161, // arbitrum
+  10,    // optimism
+  137,   // polygon
+  56,    // bsc
+  43114, // avalanche
+];
+
 const APP_CONFIG = {
   reownProjectId: REOWN_PROJECT_ID,
+  chainIds: CHAIN_IDS,
   hallidayConfig: {
     apiKey: HALLIDAY_API_KEY,
-    outputs: [
-      'base:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
-    ],
-    windowType: 'EMBED',
+    deposit: {
+      // USDC on Base
+      outputs: ['base:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'],
+    },
   },
   redirectScheme: 'hallidaysdkdemo://',
 };
@@ -44,16 +56,17 @@ function isWalletDeepLink(url: string): boolean {
   }
 }
 
-function appendRedirect(url: string): string {
+function openWallet(url: string) {
   const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}redirectUrl=${encodeURIComponent(REDIRECT_SCHEME)}`;
+  const target = `${url}${separator}redirectUrl=${encodeURIComponent(REDIRECT_SCHEME)}`;
+  Linking.openURL(target).catch(() => {});
 }
 
 function handleNavigation(request: ShouldStartLoadRequest): boolean {
   const { url, isTopFrame } = request;
 
   if (isWalletDeepLink(url)) {
-    Linking.openURL(appendRedirect(url)).catch(() => {});
+    openWallet(url);
     return false;
   }
 
@@ -71,17 +84,30 @@ function handleNavigation(request: ShouldStartLoadRequest): boolean {
 function handleOpenWindow(e: { nativeEvent: { targetUrl: string } }) {
   const { targetUrl } = e.nativeEvent;
   if (isWalletDeepLink(targetUrl)) {
-    Linking.openURL(appendRedirect(targetUrl)).catch(() => {});
+    openWallet(targetUrl);
   } else {
     WebBrowser.openBrowserAsync(targetUrl).catch(() => {});
   }
 }
 
+// Revives the WalletConnect relay socket, dropped while the WebView was suspended.
+const RECONNECT_RELAY_SCRIPT = 'window.reconnectRelay?.(); true;';
+
 export default function App() {
+  const webViewRef = useRef<WebView>(null);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') webViewRef.current?.injectJavaScript(RECONNECT_RELAY_SCRIPT);
+    });
+    return () => subscription.remove();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <WebView
+          ref={webViewRef}
           source={{ html: WEB_APP_HTML, baseUrl: 'https://app.halliday.xyz' }}
           style={styles.webview}
           javaScriptEnabled

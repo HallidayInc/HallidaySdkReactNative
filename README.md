@@ -4,7 +4,7 @@ A React Native app that embeds the [Halliday](https://halliday.xyz) payments wid
 
 ## How It Works
 
-A single-page web app (in `web-app/`) is built with Vite into a self-contained HTML string, which gets loaded into a React Native WebView. Config values (API keys, outputs, redirect scheme) are injected from the RN side via `injectedJavaScriptBeforeContentLoaded`, so the web bundle doesn't need to be rebuilt when config changes.
+A single-page web app (in `web-app/`) is built with Vite into a self-contained HTML string, which gets loaded into a React Native WebView. Config values (API keys, outputs, chain ids, redirect scheme) are injected from the RN side via `injectedJavaScriptBeforeContentLoaded`, so the web bundle doesn't need to be rebuilt when config changes.
 
 Wallet deep links (MetaMask, Trust, Coinbase Wallet, etc.) are intercepted and forwarded to the native OS so the wallet app opens directly.
 
@@ -69,10 +69,19 @@ All runtime config lives in `APP_CONFIG` in `App.tsx`. Change values there and r
 | Field | Purpose |
 |-------|---------|
 | `reownProjectId` | Reown AppKit / WalletConnect project ID |
+| `chainIds` | Chains offered to the wallet; the first is the default network |
 | `hallidayConfig.apiKey` | Halliday API key |
-| `hallidayConfig.outputs` | Token output targets (e.g. `base:0x833589f...`) |
-| `hallidayConfig.windowType` | Halliday widget display mode |
+| `hallidayConfig.deposit.outputs` | Assets the user receives (e.g. `base:0x833589f...`) |
 | `redirectScheme` | Custom URL scheme for wallet return redirects |
+
+`chainIds` selects from `HALLIDAY_NETWORKS` in `web-app/src/main.ts` — every chain from
+[Halliday's chain list](https://v2.prod.halliday.xyz/chains) that AppKit ships a definition for.
+All of them are compiled into the bundle, so changing which are active is a WebView reload rather
+than a rebuild. Ids not in that set are ignored.
+
+`hallidayConfig` is passed straight to the `HallidayPayments` constructor, so any option from the
+[SDK documentation](https://docs.halliday.xyz/pages/payments-sdk-docs) works here. The connected
+wallet is attached afterwards with `updateConfig` in `web-app/src/main.ts`.
 
 ## Project Structure
 
@@ -81,7 +90,7 @@ App.tsx              React Native shell (WebView + deep link handling)
 web-app/
   src/main.ts        AppKit + Halliday SDK integration
   index.html         Web app shell
-  vite.config.ts     Build config (includes AppKit patches)
+  vite.config.ts     Build config
   scripts/           Post-build HTML export script
 src/
   webAppHtml.ts      Auto-generated (npm run build:web)

@@ -1,41 +1,60 @@
 import { Buffer } from 'buffer';
 globalThis.Buffer = Buffer;
 
+import HallidayPayments from '@halliday-sdk/payments';
+import { connectSigner } from '@halliday-sdk/payments/ethers';
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-import * as networks from '@reown/appkit/networks';
 import {
-  openHallidayPayments,
-  openWithdraw,
-  openActivity,
-  initializeClient,
-} from '@halliday-sdk/payments';
-import { connectSigner } from '@halliday-sdk/payments/ethers';
+  abstract, apeChain, arbitrum, avalanche, base, berachain, bsc, dfk, gensyn, hyperEvm,
+  injective, ink, kaia, katana, linea, mainnet, mantle, megaeth, metis, monad, optimism,
+  plasma, polygon, ronin, sei, stable, story, tempo, unichain, worldchain, zkSync,
+} from '@reown/appkit/networks';
+import { UniversalProvider } from '@walletconnect/universal-provider';
 import { BrowserProvider } from 'ethers';
 import './style.css';
 
-const _cfg = (window as any).__APP_CONFIG__;
-const REOWN_PROJECT_ID = _cfg.reownProjectId;
-const HALLIDAY_CONFIG = _cfg.hallidayConfig;
-const REDIRECT_SCHEME: string = _cfg.redirectScheme;
+const { reownProjectId, hallidayConfig, redirectScheme, chainIds } = (window as any).__APP_CONFIG__;
 
-const evmChains = Object.values(networks).filter(
-  (n) => typeof n === 'object' && n !== null && 'id' in n && n.chainNamespace !== 'solana'
-);
+const HALLIDAY_NETWORKS = [
+  base, mainnet, arbitrum, optimism, polygon, bsc, avalanche, abstract, apeChain, berachain,
+  dfk, gensyn, hyperEvm, injective, ink, kaia, katana, linea, mantle, megaeth, metis, monad,
+  plasma, ronin, sei, stable, story, tempo, unichain, worldchain, zkSync,
+];
+
+const networks = HALLIDAY_NETWORKS.filter((n) => chainIds.includes(n.id));
+if (!networks.length) throw new Error('APP_CONFIG.chainIds matched no known network');
+
+const metadata = {
+  name: 'Halliday SDK React Native Demo',
+  description: 'Halliday SDK React Native Demo',
+  url: 'https://app.halliday.xyz',
+  icons: ['https://avatars.githubusercontent.com/u/37784886'],
+  redirect: { native: redirectScheme },
+};
+
+
+const universalProvider = await UniversalProvider.init({ projectId: reownProjectId, metadata });
+
+(window as any).reconnectRelay = async () => {
+  const { relayer } = universalProvider.client.core;
+  if (relayer.connected) return;
+
+  relayer.transportExplicitlyClosed = false;
+  try {
+    await relayer.restartTransport();
+  } catch (e) {
+    console.warn('relay reconnect failed', e);
+  }
+};
 
 const appKit = createAppKit({
   adapters: [new EthersAdapter()],
-  networks: evmChains,
-  projectId: REOWN_PROJECT_ID,
-  metadata: {
-    name: 'Halliday SDK React Native Demo',
-    description: 'Halliday SDK React Native Demo',
-    url: 'https://app.halliday.xyz',
-    icons: ['https://avatars.githubusercontent.com/u/37784886'],
-    redirect: {
-      native: REDIRECT_SCHEME,
-    },
-  },
+  universalProvider,
+  networks: networks as [(typeof networks)[number], ...typeof networks],
+  defaultNetwork: networks[0],
+  projectId: reownProjectId,
+  metadata,
   excludeWalletIds: [
     'a797aa35c0fadbfc1a53e7f675162ed5226968b44a19ee3d24385c64d1d3c393', // Phantom (no WC v2 deep links for EVM)
   ],
@@ -47,90 +66,64 @@ const appKit = createAppKit({
   },
 });
 
-let initialized = false;
-let address: string | null = null;
-let userWallet: any = null;
+const halliday = new HallidayPayments(hallidayConfig);
 
-const connectSection = document.getElementById('connect-section')!;
-const hallidaySection = document.getElementById('halliday-section')!;
-const statusText = document.getElementById('status-text')!;
-const btnDeposit = document.getElementById('btn-deposit') as HTMLButtonElement;
-const btnWithdraw = document.getElementById('btn-withdraw') as HTMLButtonElement;
-const btnActivity = document.getElementById('btn-activity') as HTMLButtonElement;
+const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
-function setActionsEnabled(enabled: boolean) {
-  btnDeposit.disabled = !enabled;
-  btnWithdraw.disabled = !enabled;
-  btnActivity.disabled = !enabled;
+const connectSection = $('connect-section');
+const hallidaySection = $('halliday-section');
+const statusText = $('status-text');
+const actionButtons = ['btn-deposit', 'btn-withdraw', 'btn-activity'].map((id) =>
+  $<HTMLButtonElement>(id),
+);
+
+function render(connected: boolean, ready: boolean, status = '') {
+  connectSection.classList.toggle('hidden', connected);
+  hallidaySection.classList.toggle('hidden', !connected);
+  actionButtons.forEach((button) => (button.disabled = !ready));
+  statusText.textContent = status;
 }
 
-function reset() {
-  initialized = false;
-  address = null;
-  connectSection.classList.remove('hidden');
-  hallidaySection.classList.add('hidden');
-  setActionsEnabled(false);
-  statusText.textContent = '';
-}
+async function attachWallet(address: string) {
+  const walletProvider = appKit.getWalletProvider();
+  if (!walletProvider) throw new Error('Wallet provider unavailable');
 
-async function setupHalliday(_address: string) {
-  statusText.textContent = 'Loading...';
+  const owner = connectSigner((ownerAddress) =>
+    new BrowserProvider(walletProvider as any).getSigner(ownerAddress ?? address),
+  );
 
-  const provider = await appKit.getUniversalProvider();
-  if (!provider) throw new Error('No provider');
-
-  userWallet = connectSigner(() => new BrowserProvider(provider as any).getSigner());
-
-  initializeClient({
-    ...HALLIDAY_CONFIG,
-    userWallet,
-    destinationAddress: _address,
-    outputs: HALLIDAY_CONFIG.outputs,
+  halliday.updateConfig({
+    owner,
+    deposit: { funders: [owner], destinationAddress: address },
+    withdrawal: { funder: owner },
   });
 
-  initialized = true;
-  setActionsEnabled(true);
-  statusText.textContent = '';
+  await halliday.ready();
 }
 
-appKit.subscribeAccount((state: { address?: string; isConnected?: boolean }) => {
-  if (state.isConnected && state.address && !initialized) {
-    connectSection.classList.add('hidden');
-    hallidaySection.classList.remove('hidden');
-    address = state.address;
-    setupHalliday(address).catch((e) => {
-      statusText.textContent = e instanceof Error ? e.message : 'Failed to load';
-    });
-  } else if (!state.isConnected && initialized) {
-    reset();
+let attachedAddress: string | null = null;
+
+appKit.subscribeAccount(({ isConnected, address }) => {
+  if (!isConnected || !address) {
+    attachedAddress = null;
+    render(false, false);
+    return;
   }
+  if (address.toLowerCase() === attachedAddress) return;
+
+  attachedAddress = address.toLowerCase();
+  render(true, false, 'Loading…');
+  attachWallet(address)
+    .then(() => render(true, true))
+    .catch((e: Error) => render(true, false, e.message));
 });
 
-document.getElementById('btn-connect')!.addEventListener('click', () => {
-  appKit.open();
-});
+halliday.on('status', (s) => console.log('halliday status:', s.type, s.payload));
+halliday.on('error', (e) => console.error(`halliday error (${e.source}):`, e.message));
+halliday.on('close', () => console.log('halliday widget closed'));
 
-document.getElementById('btn-restart')!.addEventListener('click', async () => {
-  try { await appKit.disconnect(); } catch {}
-  reset();
-});
-
-btnDeposit.addEventListener('click', () => {
-  if (!initialized || !userWallet || !address) return;
-  openHallidayPayments({
-    userWallet,
-  });
-});
-
-btnWithdraw.addEventListener('click', () => {
-  if (!initialized || !userWallet) return;
-  openWithdraw({
-    withdrawInputs: HALLIDAY_CONFIG.outputs,
-    withdrawFunder: userWallet
-  });
-});
-
-btnActivity.addEventListener('click', () => {
-  if (!initialized) return;
-  openActivity();
-});
+$('btn-connect').addEventListener('click', () => appKit.open());
+$('btn-restart').addEventListener('click', () => appKit.disconnect().catch(() => {}));
+$('btn-deposit').addEventListener('click', () => halliday.openDeposit());
+$('btn-withdraw').addEventListener('click', () => halliday.openWithdrawal());
+$('btn-activity').addEventListener('click', () => halliday.openActivity());
